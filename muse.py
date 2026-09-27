@@ -186,7 +186,7 @@ class Gateway:
                f"&auth_token={urllib.parse.quote(hatch_token, safe='')}")
         _require_http()
         self.ws = WebSocket()
-        self.ws.connect(url, impersonate="chrome", timeout=20)
+        self.ws.connect(url, impersonate="chrome", timeout=20, verify=True)
         noise = NoiseConnection.from_name(b"Noise_XX_25519_AESGCM_SHA256")
         noise.set_as_initiator()
         noise.set_keypair_from_private_bytes(Keypair.STATIC, os.urandom(32))
