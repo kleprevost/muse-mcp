@@ -187,6 +187,11 @@ def is_reply(ev, baseline):
         return False
     if "display_text_ready" in p and not p["display_text_ready"]:
         return False
+    # While Muse is still writing, history carries the first delta with
+    # metadata.streaming=true; the finished message drops the flag.
+    meta = p.get("metadata") if isinstance(p.get("metadata"), dict) else {}
+    if meta.get("streaming"):
+        return False
     return True
 
 

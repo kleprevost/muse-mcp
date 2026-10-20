@@ -99,6 +99,23 @@ entry is:
 - **`muse_feed(limit?, raw=false)`** — returns feed unit IDs, titles, content,
   dates, editions, source/URL metadata, and a redacted unit copy. `raw=true`
   exposes the expanded gateway response with credential-shaped fields redacted.
+- **`muse_main_since(cursor=0, limit=50, raw=false)`** — main-chat messages
+  with `seq` greater than `cursor`, including Muse's proactive pushes
+  (`proactive=true`). Store `next_cursor` and pass it back next time to read
+  only what is new. `possibly_missed=true` means more than `limit` messages
+  arrived since the cursor.
+- **`muse_watch(seconds=60, max_events=500, raw=false)`** — subscribes to
+  `chat.subscribe` for up to 600 seconds and returns assembled message text
+  (`delta.text_append` chunks joined, `delta.message_done` taken as final),
+  side-chat `session_updates` snippets, and per-event counts. Side-chat replies
+  are not streamed live; read them with `muse_history`.
+- **`muse_unread()`** / **`muse_seen(thread)`** — unread counts; mark a side
+  chat seen.
+- **`muse_goals(goal_id?)`** / **`muse_ideas(idea_id?)`** — list goals or idea
+  cards, or show one in full.
+- **`muse_session(action, thread?, title?)`** — `start`, `rename`, `pin`,
+  `unpin`, `archive`, `unarchive`. Delete is only reachable through `muse_raw`.
+- **`muse_wake()`** — asks muse.ai to wake the personal VM.
 - **`muse_raw(method, body?, path_params?, query_params?, timeout=30)`** — an
   advanced escape hatch for one method validated against `routes.json`. It is
   disabled by default; set `MUSE_MCP_ENABLE_RAW=1` (or `"enable_raw": true` in
@@ -145,6 +162,12 @@ muse_send(
 - For long computer-use jobs, `fire_and_forget=true` dispatches the request and
   closes its Gateway without waiting for completion. It does not provide a
   protocol-level acceptance acknowledgement; check later with `muse_history`.
+- Transient failures (timeouts, dropped connections, stream resets, 502/503/504)
+  reconnect on a fresh Gateway with 1 s then 3 s backoff. `VM_UNAVAILABLE`
+  first requests a VM wake. Errors after retries report `attempts`. Auth and
+  argument errors never retry. `muse_send` never retries once `chat.stream`
+  accepted the message, and `muse_session(start)` never retries, so neither can
+  run twice.
   A local timeout never cancels Muse's task.
 - Muse VMs can sleep, restart, or be temporarily unavailable. Retry a
   structured `VM_UNAVAILABLE`; `muse-mcp wake` is available for a configured or
